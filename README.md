@@ -1,5 +1,5 @@
-# gofoo
+[![Build Status](https://travis-ci.org/cedexis/go-itm.svg)](https://travis-ci.org/cedexis/go-itm)
 
-**TODO**
+# go-itm
 
-The name gofoo is a placeholder.
+A Go client library for accessing the Citrix ITM API.
