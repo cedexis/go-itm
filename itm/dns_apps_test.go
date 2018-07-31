@@ -25,22 +25,22 @@ func TestNewDnsAppOpts(t *testing.T) {
 	for _, curr := range testData {
 		opts := NewDnsAppOpts(curr.name, curr.description, curr.fallbackCname, curr.appData)
 		if err := testValues("app type", "V1_JS", opts.Type); err != nil {
-			t.Error(unexpectedValueString("name", "V1_JS", opts.Type))
+			t.Error(unexpectedValueString("app type", "V1_JS", opts.Type))
 		}
-		if err := testValues("app type", "dns", opts.Protocol); err != nil {
-			t.Error(unexpectedValueString("name", "dns", opts.Protocol))
+		if err := testValues("protocol", "dns", opts.Protocol); err != nil {
+			t.Error(unexpectedValueString("protocol", "dns", opts.Protocol))
 		}
 		if err := testValues("name", curr.name, opts.Name); err != nil {
 			t.Error(unexpectedValueString("name", curr.name, opts.Name))
 		}
 		if err := testValues("description", curr.description, opts.Description); err != nil {
-			t.Error(unexpectedValueString("name", curr.description, opts.Description))
+			t.Error(unexpectedValueString("description", curr.description, opts.Description))
 		}
 		if err := testValues("fallback CNAME", curr.fallbackCname, opts.FallbackCname); err != nil {
-			t.Error(unexpectedValueString("name", curr.description, opts.FallbackCname))
+			t.Error(unexpectedValueString("fallback CNAME", curr.description, opts.FallbackCname))
 		}
 		if err := testValues("app data", curr.appData, opts.AppData); err != nil {
-			t.Error(unexpectedValueString("name", curr.appData, opts.AppData))
+			t.Error(unexpectedValueString("app data", curr.appData, opts.AppData))
 		}
 	}
 }
@@ -59,6 +59,7 @@ func TestDnsAppCreate(t *testing.T) {
 		expectedDescription   string
 		expectedFallbackCname string
 		expectedAppData       string
+		expectedAppCname      string
 	}{
 		{
 			NewDnsAppOpts("foo", "foo description", "fallback.foo.com", "foo app data"),
@@ -77,6 +78,7 @@ func TestDnsAppCreate(t *testing.T) {
 				Description:   "foo description",
 				FallbackCname: "fallback.foo.com",
 				AppData:       "foo app data",
+				AppCname:      "foo app cname",
 			},
 			"application/json",
 			123,
@@ -84,6 +86,7 @@ func TestDnsAppCreate(t *testing.T) {
 			"foo description",
 			"fallback.foo.com",
 			"foo app data",
+			"foo app cname",
 		},
 	}
 	for _, curr := range testData {
@@ -118,6 +121,9 @@ func TestDnsAppCreate(t *testing.T) {
 			t.Error(err)
 		}
 		if err := testValues("app data", curr.expectedAppData, app.AppData); err != nil {
+			t.Error(err)
+		}
+		if err := testValues("app CNAME", curr.expectedAppCname, app.AppCname); err != nil {
 			t.Error(err)
 		}
 	}
