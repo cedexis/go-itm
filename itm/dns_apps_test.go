@@ -55,9 +55,11 @@ func TestDnsAppCreate(t *testing.T) {
 		responseBodyObj       DnsApp
 		responseContentType   string
 		expectedId            int
+		expectedVersion       int
 		expectedName          string
 		expectedDescription   string
 		expectedFallbackCname string
+		expectedFallbackTtl   int
 		expectedAppData       string
 		expectedAppCname      string
 	}{
@@ -74,17 +76,21 @@ func TestDnsAppCreate(t *testing.T) {
 			http.StatusCreated,
 			DnsApp{
 				Id:            123,
+				Version:       1,
 				Name:          "foo",
 				Description:   "foo description",
 				FallbackCname: "fallback.foo.com",
+				FallbackTtl:   20,
 				AppData:       "foo app data",
 				AppCname:      "foo app cname",
 			},
 			"application/json",
 			123,
+			1,
 			"foo",
 			"foo description",
 			"fallback.foo.com",
+			20,
 			"foo app data",
 			"foo app cname",
 		},
@@ -111,6 +117,9 @@ func TestDnsAppCreate(t *testing.T) {
 		if err := testValues("id", curr.expectedId, app.Id); err != nil {
 			t.Error(err)
 		}
+		if err := testValues("version", curr.expectedVersion, app.Version); err != nil {
+			t.Error(err)
+		}
 		if err := testValues("name", curr.expectedName, app.Name); err != nil {
 			t.Error(err)
 		}
@@ -118,6 +127,9 @@ func TestDnsAppCreate(t *testing.T) {
 			t.Error(err)
 		}
 		if err := testValues("fallback CNAME", curr.expectedFallbackCname, app.FallbackCname); err != nil {
+			t.Error(err)
+		}
+		if err := testValues("fallback TTL", curr.expectedFallbackTtl, app.FallbackTtl); err != nil {
 			t.Error(err)
 		}
 		if err := testValues("app data", curr.expectedAppData, app.AppData); err != nil {

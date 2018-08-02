@@ -35,8 +35,10 @@ type DnsApp struct {
 	Description   string `json:"description"`
 	Enabled       bool   `json:"enabled"`
 	FallbackCname string `json:"fallbackCname"`
+	FallbackTtl   int    `json:"ttl"`
 	AppData       string `json:"appData"`
 	AppCname      string `json:"cname"`
+	Version       int    `json:"version"`
 }
 
 type DnsAppsListTestFunc func(*DnsApp) bool
