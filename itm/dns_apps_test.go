@@ -110,7 +110,7 @@ func TestDnsAppCreate(t *testing.T) {
 			responseBody, _ := json.Marshal(curr.responseBodyObj)
 			fmt.Fprint(w, string(responseBody))
 		})
-		app, err := client.DnsApps.Create(&curr.dnsAppOpts)
+		app, err := client.DnsApps.Create(&curr.dnsAppOpts, false)
 		if err != nil {
 			t.Error(err)
 		}
