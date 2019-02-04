@@ -60,3 +60,42 @@ func TestNewClient(t *testing.T) {
 		}
 	}
 }
+
+type fakeReaderCloser struct {
+	readCount int
+	readError error
+}
+
+func (r fakeReaderCloser) Close() error {
+	return nil
+}
+
+func (r fakeReaderCloser) Read(p []byte) (n int, err error) {
+	return r.readCount, r.readError
+}
+
+func TestIOErrorOnReadAllDuringGet(t *testing.T) {
+	response := http.Response{
+		Body: fakeReaderCloser{
+			readCount: 0,
+			readError: &someError{
+				errorString: "foo read error",
+			},
+		},
+	}
+	// A fake client whose response raises an error to be caught and handled
+	fakeClient := newFakeHTTPClient(
+		fakeRoundTripper{
+			resp: &response,
+			err:  nil,
+		})
+	testClient, _ := NewClient(HTTPClient(fakeClient))
+	resp, err := testClient.get("foo path")
+	expectedError := "foo read error"
+	if resp != nil {
+		t.Error("Expected nil response")
+	}
+	if expectedError != err.Error() {
+		t.Errorf("Unexpected error.\nExpected: %s\nGot: %s", expectedError, err.Error())
+	}
+}

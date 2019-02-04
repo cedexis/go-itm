@@ -3,12 +3,14 @@ package itm
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/url"
 )
 
 const dnsAppsBasePath = "v2/config/applications/dns.json"
 
-type dnsAppOpts struct {
+// DNSAppOpts specifies settings used to create a new Citrix ITM DNS app
+type DNSAppOpts struct {
 	AppData       string `json:"appData"`
 	Description   string `json:"description"`
 	FallbackCname string `json:"fallbackCname"`
@@ -17,8 +19,9 @@ type dnsAppOpts struct {
 	Type          string `json:"type"`
 }
 
-func NewDnsAppOpts(name string, description string, fallbackCname string, appData string) dnsAppOpts {
-	result := dnsAppOpts{
+// NewDNSAppOpts creates a DNSAppOpts struct
+func NewDNSAppOpts(name string, description string, fallbackCname string, appData string) DNSAppOpts {
+	result := DNSAppOpts{
 		Name:          name,
 		Description:   description,
 		FallbackCname: fallbackCname,
@@ -29,7 +32,8 @@ func NewDnsAppOpts(name string, description string, fallbackCname string, appDat
 	return result
 }
 
-type DnsApp struct {
+// DNSApp species settings of an existing Citrix DNS app
+type DNSApp struct {
 	Id            int    `json:"id"`
 	Name          string `json:"name"`
 	Description   string `json:"description"`
@@ -41,21 +45,22 @@ type DnsApp struct {
 	Version       int    `json:"version"`
 }
 
-type DnsAppsListTestFunc func(*DnsApp) bool
+type dnsAppsListTestFunc func(*DNSApp) bool
 
-type DnsAppsService interface {
-	Create(*dnsAppOpts, bool) (*DnsApp, error)
-	Update(int, *dnsAppOpts, bool) (*DnsApp, error)
-	Get(int) (*DnsApp, error)
+type dnsAppsService interface {
+	Create(*DNSAppOpts, bool) (*DNSApp, error)
+	Update(int, *DNSAppOpts, bool) (*DNSApp, error)
+	Get(int) (*DNSApp, error)
 	Delete(int) error
-	List(opts ...DnsAppsListTestFunc) ([]DnsApp, error)
+	List(opts ...dnsAppsListTestFunc) ([]DNSApp, error)
 }
 
-type DnsAppsServiceImpl struct {
+type dnsAppsServiceImpl struct {
 	client *Client
 }
 
-func (s *DnsAppsServiceImpl) Create(opts *dnsAppOpts, publish bool) (*DnsApp, error) {
+// Create a DNS app
+func (s *dnsAppsServiceImpl) Create(opts *DNSAppOpts, publish bool) (*DNSApp, error) {
 	jsonOpts, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
@@ -70,18 +75,23 @@ func (s *DnsAppsServiceImpl) Create(opts *dnsAppOpts, publish bool) (*DnsApp, er
 		},
 	}
 	resp, err := s.client.post(dnsAppsBasePath, jsonOpts, qs)
+	if err != nil {
+		log.Printf("Error issuing post request from DNSAppsServiceImpl.Create: %v", err)
+		return nil, err
+	}
 	if 201 != resp.StatusCode {
 		return nil, &UnexpectedHTTPStatusError{
 			Expected: 201,
 			Got:      resp.StatusCode,
 		}
 	}
-	var result DnsApp
+	var result DNSApp
 	json.Unmarshal(resp.Body, &result)
 	return &result, nil
 }
 
-func (s *DnsAppsServiceImpl) Update(id int, opts *dnsAppOpts, publish bool) (*DnsApp, error) {
+// Update a DNS app
+func (s *dnsAppsServiceImpl) Update(id int, opts *DNSAppOpts, publish bool) (*DNSApp, error) {
 	jsonOpts, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
@@ -95,21 +105,25 @@ func (s *DnsAppsServiceImpl) Update(id int, opts *dnsAppOpts, publish bool) (*Dn
 			publishVal,
 		},
 	}
-	resp, err := s.client.put(getDnsAppPath(id), jsonOpts, qs)
+	resp, err := s.client.put(getDNSAppPath(id), jsonOpts, qs)
+	if err != nil {
+		log.Printf("Error issuing put request from DNSAppsServiceImpl.Update: %v", err)
+		return nil, err
+	}
 	if 200 != resp.StatusCode {
 		return nil, &UnexpectedHTTPStatusError{
 			Expected: 200,
 			Got:      resp.StatusCode,
 		}
 	}
-	var result DnsApp
+	var result DNSApp
 	json.Unmarshal(resp.Body, &result)
 	return &result, nil
 }
 
-func (s *DnsAppsServiceImpl) Get(id int) (*DnsApp, error) {
-	var result DnsApp
-	resp, err := s.client.get(getDnsAppPath(id))
+func (s *dnsAppsServiceImpl) Get(id int) (*DNSApp, error) {
+	var result DNSApp
+	resp, err := s.client.get(getDNSAppPath(id))
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +136,8 @@ func (s *DnsAppsServiceImpl) Get(id int) (*DnsApp, error) {
 	return &result, nil
 }
 
-func (s *DnsAppsServiceImpl) Delete(id int) error {
-	resp, err := s.client.delete(getDnsAppPath(id))
+func (s *dnsAppsServiceImpl) Delete(id int) error {
+	resp, err := s.client.delete(getDNSAppPath(id))
 	if 204 != resp.StatusCode {
 		return &UnexpectedHTTPStatusError{
 			Expected: 204,
@@ -133,13 +147,13 @@ func (s *DnsAppsServiceImpl) Delete(id int) error {
 	return err
 }
 
-func (s *DnsAppsServiceImpl) List(tests ...DnsAppsListTestFunc) ([]DnsApp, error) {
+func (s *dnsAppsServiceImpl) List(tests ...dnsAppsListTestFunc) ([]DNSApp, error) {
 	resp, err := s.client.get(dnsAppsBasePath)
 	if err != nil {
 		return nil, err
 	}
-	var all []DnsApp
-	var result []DnsApp
+	var all []DNSApp
+	var result []DNSApp
 	json.Unmarshal(resp.Body, &all)
 	for _, current := range all {
 		stillOk := true
@@ -156,6 +170,6 @@ func (s *DnsAppsServiceImpl) List(tests ...DnsAppsListTestFunc) ([]DnsApp, error
 	return result, nil
 }
 
-func getDnsAppPath(id int) string {
+func getDNSAppPath(id int) string {
 	return fmt.Sprintf("%s/%d", dnsAppsBasePath, id)
 }
