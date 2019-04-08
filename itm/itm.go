@@ -9,7 +9,7 @@ import (
 
 const (
 	libraryName            = "go-itm"
-	libraryVersion         = "0.0.1"
+	libraryVersion         = "1.0.1"
 	libraryURL             = "https://github.com/cedexis/" + libraryName
 	defaultBaseURL         = "https://portal.cedexis.com/api/"
 	defaultUserAgentString = libraryName + "/" + libraryVersion + " (" + libraryURL + ")"
@@ -49,6 +49,14 @@ func HTTPClient(httpClient *http.Client) ClientOpt {
 	}
 }
 
+// UserAgentString creates a client option used to specify the user-agent HTTP request header
+func UserAgentString(value string) ClientOpt {
+	return func(c *Client) error {
+		c.UserAgentString = value
+		return nil
+	}
+}
+
 func (c *Client) parseOptions(opts ...ClientOpt) error {
 	for _, option := range opts {
 		err := option(c)
@@ -63,7 +71,8 @@ func (c *Client) parseOptions(opts ...ClientOpt) error {
 func NewClient(opts ...ClientOpt) (*Client, error) {
 	baseURL, _ := url.Parse(defaultBaseURL)
 	result := &Client{
-		BaseURL: baseURL,
+		BaseURL:         baseURL,
+		UserAgentString: defaultUserAgentString,
 	}
 	result.DNSApps = &dnsAppsServiceImpl{client: result}
 	if err := result.parseOptions(opts...); err != nil {

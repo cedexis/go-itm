@@ -2,13 +2,7 @@ package itm
 
 import (
 	"fmt"
-	"net/url"
 )
-
-func stringToURL(asString string) *url.URL {
-	result, _ := url.Parse(asString)
-	return result
-}
 
 func unexpectedValueString(label string, expected interface{}, got interface{}) string {
 	return fmt.Sprintf("Unexpected value [%s]\nExpected: %v\nGot: %v", label, expected, got)
