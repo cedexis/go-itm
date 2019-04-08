@@ -9,7 +9,7 @@ import (
 
 const (
 	libraryName            = "go-itm"
-	libraryVersion         = "0.0.1"
+	libraryVersion         = "1.0.1"
 	libraryURL             = "https://github.com/cedexis/" + libraryName
 	defaultBaseURL         = "https://portal.cedexis.com/api/"
 	defaultUserAgentString = libraryName + "/" + libraryVersion + " (" + libraryURL + ")"
