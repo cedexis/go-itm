@@ -2,7 +2,6 @@ TEST?=$$(go list ./... |grep -v 'vendor')
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 PKG_NAME=go-itm
 DOCKER_IMAGE_NAME=$(PKG_NAME)
-DOCKER_CONTAINER_NAME=$(PKG_NAME)-container
 
 .PHONY: test
 
