@@ -8,19 +8,19 @@ A Go client library for accessing the Citrix ITM API.
 
 go-itm can be updated and tested in isolation on your local machine. A Dockerfile and Make targets are provided to aid in this process.
 
+Build a Docker image called go-itm:latest:
+
 ```bash
 $ make docker-build
 ```
 
-This builds a Docker image called go-itm:latest on your system.
+Run an interactive Bash session in a new Docker container based on the go-itm:latest image:
 
 ```bash
 $ make docker-run
 ```
 
-This runs an interactive Bash session within a new Docker container based on the go-itm:latest image.
-
-Within the container:
+Run unit tests within the container:
 
 ```bash
 [container] /go-itm $ make test 
