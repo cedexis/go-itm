@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -84,6 +85,16 @@ func TestNewDnsAppOpts(t *testing.T) {
 			"Foo fallback CNAME",
 			"Foo app data",
 		},
+		{
+			"Foo",
+			"Foo Description",
+			"Foo fallback CNAME",
+			`
+Foo app data
+With spaces
+
+`,
+		},
 	}
 	for _, curr := range testData {
 		opts := NewDNSAppOpts(curr.name, curr.description, curr.fallbackCname, curr.appData)
@@ -102,8 +113,9 @@ func TestNewDnsAppOpts(t *testing.T) {
 		if err := testValues("fallback CNAME", curr.fallbackCname, opts.FallbackCname); err != nil {
 			t.Error(unexpectedValueString("fallback CNAME", curr.description, opts.FallbackCname))
 		}
-		if err := testValues("app data", curr.appData, opts.AppData); err != nil {
-			t.Error(unexpectedValueString("app data", curr.appData, opts.AppData))
+		trimmed := strings.TrimSpace(curr.appData)
+		if err := testValues("app data", trimmed, opts.AppData); err != nil {
+			t.Error(unexpectedValueString("app data", trimmed, opts.AppData))
 		}
 	}
 }
