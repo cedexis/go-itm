@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"strings"
 )
 
 const dnsAppsBasePath = "v2/config/applications/dns.json"
@@ -25,7 +26,7 @@ func NewDNSAppOpts(name string, description string, fallbackCname string, appDat
 		Name:          name,
 		Description:   description,
 		FallbackCname: fallbackCname,
-		AppData:       appData,
+		AppData:       strings.TrimSpace(appData),
 		Type:          "V1_JS",
 		Protocol:      "dns",
 	}
