@@ -20,7 +20,8 @@ type DNSAppOpts struct {
 	Type          string `json:"type"`
 }
 
-// NewDNSAppOpts creates a DNSAppOpts struct
+// NewDNSAppOpts creates and returns a new DNSAppOpts struct. Any leading or
+// trailing whitespace in appData is stripped in the resulting object.
 func NewDNSAppOpts(name string, description string, fallbackCname string, appData string) DNSAppOpts {
 	result := DNSAppOpts{
 		Name:          name,
