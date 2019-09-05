@@ -3,6 +3,7 @@ package itm
 import (
 	"bytes"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 )
@@ -52,7 +53,9 @@ func HTTPClient(httpClient *http.Client) ClientOpt {
 // UserAgentString creates a client option used to specify the user-agent HTTP request header
 func UserAgentString(value string) ClientOpt {
 	return func(c *Client) error {
-		c.UserAgentString = value
+		if 0 < len(value) {
+			c.UserAgentString = value
+		}
 		return nil
 	}
 }
@@ -92,6 +95,7 @@ type response struct {
 func (c *Client) get(path string) (*response, error) {
 	relURL, _ := url.Parse(path)
 	apiURL := c.BaseURL.ResolveReference(relURL)
+	logRequest("GET", apiURL, nil)
 	req, err := http.NewRequest("GET", apiURL.String(), nil)
 	if err != nil {
 		return nil, err
@@ -107,6 +111,7 @@ func (c *Client) get(path string) (*response, error) {
 	if err != nil {
 		return nil, err
 	}
+	logResponse("GET", resp.StatusCode, body)
 	return &response{
 		StatusCode: resp.StatusCode,
 		Body:       body,
@@ -119,6 +124,7 @@ func (c *Client) post(path string, data []byte, qsParams *url.Values) (*response
 	if qsParams != nil {
 		apiURL.RawQuery = qsParams.Encode()
 	}
+	logRequest("POST", apiURL, data)
 	req, err := http.NewRequest("POST", apiURL.String(), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -135,6 +141,7 @@ func (c *Client) post(path string, data []byte, qsParams *url.Values) (*response
 	if err != nil {
 		return nil, err
 	}
+	logResponse("POST", resp.StatusCode, body)
 	return &response{
 		StatusCode: resp.StatusCode,
 		Body:       body,
@@ -147,6 +154,7 @@ func (c *Client) put(path string, data []byte, qsParams *url.Values) (*response,
 	if qsParams != nil {
 		apiURL.RawQuery = qsParams.Encode()
 	}
+	logRequest("PUT", apiURL, data)
 	req, err := http.NewRequest("PUT", apiURL.String(), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -160,6 +168,10 @@ func (c *Client) put(path string, data []byte, qsParams *url.Values) (*response,
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	logResponse("PUT", resp.StatusCode, body)
 	return &response{
 		StatusCode: resp.StatusCode,
 		Body:       body,
@@ -169,6 +181,7 @@ func (c *Client) put(path string, data []byte, qsParams *url.Values) (*response,
 func (c *Client) delete(path string) (*response, error) {
 	relURL, _ := url.Parse(path)
 	apiURL := c.BaseURL.ResolveReference(relURL)
+	logRequest("DELETE", apiURL, nil)
 	req, err := http.NewRequest("DELETE", apiURL.String(), nil)
 	if err != nil {
 		return nil, err
@@ -179,8 +192,19 @@ func (c *Client) delete(path string) (*response, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	logResponse("DELETE", resp.StatusCode, nil)
 	return &response{
 		StatusCode: resp.StatusCode,
 		Body:       nil,
 	}, nil
+}
+
+func logRequest(operation string, apiURL *url.URL, data []byte) {
+	log.Printf("[DEBUG] client %s request URL: %#v", operation, apiURL)
+	log.Printf("[DEBUG] client %s request data: %s", operation, data)
+}
+
+func logResponse(operation string, statusCode int, body []byte) {
+	log.Printf("[DEBUG] client %s response status code: %v", operation, statusCode)
+	log.Printf("[DEBUG] client %s response body: %s", operation, body)
 }
