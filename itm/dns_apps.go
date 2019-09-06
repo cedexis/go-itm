@@ -103,7 +103,7 @@ func (s *dnsAppsServiceImpl) Create(opts *DNSAppOpts, publish bool) (*DNSApp, er
 		return nil, err
 	}
 	if 201 != resp.StatusCode {
-		return nil, fmt.Errorf("[WARN] Unexpected HTTP response. HTTP status code: %d. Body: %s", resp.StatusCode, resp.Body)
+		return nil, fmt.Errorf("Unexpected HTTP response. HTTP status code: %d. Body: %s", resp.StatusCode, resp.Body)
 	}
 	var result DNSApp
 	json.Unmarshal(resp.Body, &result)
