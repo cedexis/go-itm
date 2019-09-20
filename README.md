@@ -1,11 +1,11 @@
 [![Build Status](https://travis-ci.org/cedexis/go-itm.svg)](https://travis-ci.org/cedexis/go-itm)
 
+| NOTICE: Due to strategic changes at Citrix, this project is no longer maintained. |
+| --- |
+
 # go-itm
 
 A Go client library for accessing the Citrix ITM API.
-
-| NOTICE: Due to strategic changes at Citrix, this project is no longer maintained. |
-| --- |
 
 ## Running Unit Tests in Docker
 
