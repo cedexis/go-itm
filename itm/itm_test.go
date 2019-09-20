@@ -55,7 +55,7 @@ func TestNewClient(t *testing.T) {
 		{
 			nil,
 			"",
-			"https://portal.cedexis.com/api/",
+			"https://itm.cloud.com:443/api/",
 		},
 	}
 	for _, current := range testData {

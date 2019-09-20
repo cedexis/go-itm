@@ -2,6 +2,7 @@ package itm
 
 import (
 	"bytes"
+	//	"crypto/tls"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -11,9 +12,11 @@ const (
 	libraryName            = "go-itm"
 	libraryVersion         = "1.0.1"
 	libraryURL             = "https://github.com/cedexis/" + libraryName
-	defaultBaseURL         = "https://portal.cedexis.com/api/"
+	defaultBaseURL         = "https://itm.cloud.com:443/api/"
 	defaultUserAgentString = libraryName + "/" + libraryVersion + " (" + libraryURL + ")"
 )
+
+var ClientToken string
 
 // Client specifies settings for a new ITM client
 type Client struct {
@@ -22,7 +25,10 @@ type Client struct {
 	UserAgentString string
 
 	// Services
-	DNSApps dnsAppsService
+	DNSApps   dnsAppsService
+	Platform  platformService
+	DNSZone   dnsZoneService
+	DNSRecord dnsRecordService
 }
 
 // ClientOpt is a generic type used to specify validated options for creating an ITM client
@@ -75,9 +81,13 @@ func NewClient(opts ...ClientOpt) (*Client, error) {
 		UserAgentString: defaultUserAgentString,
 	}
 	result.DNSApps = &dnsAppsServiceImpl{client: result}
+	result.Platform = &platformServiceImpl{client: result}
+	result.DNSZone = &dnsZoneServiceImpl{client: result}
+	result.DNSRecord = &dnsRecordServiceImpl{client: result}
 	if err := result.parseOptions(opts...); err != nil {
 		return nil, err
 	}
+
 	if nil == result.httpClient {
 		result.httpClient = http.DefaultClient
 	}
@@ -98,6 +108,9 @@ func (c *Client) get(path string) (*response, error) {
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", c.UserAgentString)
+	if len(ClientToken) != 0 {
+		req.Header.Add("Authorization", "Bearer "+ClientToken)
+	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -126,6 +139,9 @@ func (c *Client) post(path string, data []byte, qsParams *url.Values) (*response
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", c.UserAgentString)
+	if len(ClientToken) != 0 {
+		req.Header.Add("Authorization", "Bearer "+ClientToken)
+	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -154,6 +170,9 @@ func (c *Client) put(path string, data []byte, qsParams *url.Values) (*response,
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", c.UserAgentString)
+	if len(ClientToken) != 0 {
+		req.Header.Add("Authorization", "Bearer "+ClientToken)
+	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err
@@ -174,6 +193,9 @@ func (c *Client) delete(path string) (*response, error) {
 		return nil, err
 	}
 	req.Header.Set("User-Agent", c.UserAgentString)
+	if len(ClientToken) != 0 {
+		req.Header.Add("Authorization", "Bearer "+ClientToken)
+	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, err

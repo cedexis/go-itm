@@ -10,41 +10,47 @@ import (
 
 const dnsAppsBasePath = "v2/config/applications/dns.json"
 
-// DNSAppOpts specifies settings used to create a new Citrix ITM DNS app
+// DNSAppOpts specifies settings used to create a new Citrix ITM Openmix Application
 type DNSAppOpts struct {
-	AppData       string `json:"appData"`
-	Description   string `json:"description"`
-	FallbackCname string `json:"fallbackCname"`
-	Name          string `json:"name"`
-	Protocol      string `json:"protocol"`
-	Type          string `json:"type"`
+	Name          string                   `json:"name"`
+	AppData       string                   `json:"appData"`
+	Description   string                   `json:"description"`
+	FallbackCname string                   `json:"fallbackCname"`
+	Platforms     []map[string]interface{} `json:"platforms"`
+	Type          string                   `json:"type"`
+	Protocol      string                   `json:"protocol"`
+	AvlThreshold  int                      `json:"availabilityThreshold"`
 }
 
 // NewDNSAppOpts creates and returns a new DNSAppOpts struct. Any leading or
 // trailing whitespace in appData is stripped in the resulting object.
-func NewDNSAppOpts(name string, description string, fallbackCname string, appData string) DNSAppOpts {
+func NewDNSAppOpts(name string, appData string, description string, fallback string, platforms []map[string]interface{}, omapptype string, protocol string, threshold int) DNSAppOpts {
 	result := DNSAppOpts{
 		Name:          name,
-		Description:   description,
-		FallbackCname: fallbackCname,
 		AppData:       strings.TrimSpace(appData),
-		Type:          "V1_JS",
-		Protocol:      "dns",
+		Description:   description,
+		FallbackCname: fallback,
+		Platforms:     platforms,
+		Type:          omapptype,
+		Protocol:      protocol,
+		AvlThreshold:  threshold,
 	}
 	return result
 }
 
-// DNSApp species settings of an existing Citrix DNS app
+// DNSApp species settings of an existing Citrix Openmix Application
 type DNSApp struct {
-	Id            int    `json:"id"`
-	Name          string `json:"name"`
-	Description   string `json:"description"`
-	Enabled       bool   `json:"enabled"`
-	FallbackCname string `json:"fallbackCname"`
-	FallbackTtl   int    `json:"ttl"`
-	AppData       string `json:"appData"`
-	AppCname      string `json:"cname"`
-	Version       int    `json:"version"`
+	Id            int                      `json:"id"`
+	Name          string                   `json:"name"`
+	AppData       string                   `json:"appData"`
+	AppCname      string                   `json:"cname"`
+	Description   string                   `json:"description"`
+	FallbackCname string                   `json:"fallbackCname"`
+	FallbackTtl   int                      `json:"ttl"`
+	Platforms     []map[string]interface{} `json:"platforms"`
+	AvlThreshold  int                      `json:"availabilityThreshold"`
+	Version       int                      `json:"version"`
+	Enabled       bool                     `json:"enabled"`
 }
 
 type dnsAppsListTestFunc func(*DNSApp) bool
@@ -61,7 +67,7 @@ type dnsAppsServiceImpl struct {
 	client *Client
 }
 
-// Create a DNS app
+// Create a Openmix Application
 func (s *dnsAppsServiceImpl) Create(opts *DNSAppOpts, publish bool) (*DNSApp, error) {
 	jsonOpts, err := json.Marshal(opts)
 	if err != nil {
@@ -92,7 +98,7 @@ func (s *dnsAppsServiceImpl) Create(opts *DNSAppOpts, publish bool) (*DNSApp, er
 	return &result, nil
 }
 
-// Update a DNS app
+// Update a Openmix Application
 func (s *dnsAppsServiceImpl) Update(id int, opts *DNSAppOpts, publish bool) (*DNSApp, error) {
 	jsonOpts, err := json.Marshal(opts)
 	if err != nil {
@@ -123,6 +129,7 @@ func (s *dnsAppsServiceImpl) Update(id int, opts *DNSAppOpts, publish bool) (*DN
 	return &result, nil
 }
 
+// Getting details of an Openmix Application using Openmix Application ID
 func (s *dnsAppsServiceImpl) Get(id int) (*DNSApp, error) {
 	var result DNSApp
 	resp, err := s.client.get(getDNSAppPath(id))
@@ -138,6 +145,7 @@ func (s *dnsAppsServiceImpl) Get(id int) (*DNSApp, error) {
 	return &result, nil
 }
 
+// Delete an Openmix Application using Openmix Application ID
 func (s *dnsAppsServiceImpl) Delete(id int) error {
 	resp, err := s.client.delete(getDNSAppPath(id))
 	if 204 != resp.StatusCode {
@@ -149,6 +157,7 @@ func (s *dnsAppsServiceImpl) Delete(id int) error {
 	return err
 }
 
+// Get list of Openmix Application
 func (s *dnsAppsServiceImpl) List(tests ...dnsAppsListTestFunc) ([]DNSApp, error) {
 	resp, err := s.client.get(dnsAppsBasePath)
 	if err != nil {
@@ -172,6 +181,7 @@ func (s *dnsAppsServiceImpl) List(tests ...dnsAppsListTestFunc) ([]DNSApp, error
 	return result, nil
 }
 
+// Get Openmix Application APIs URL
 func getDNSAppPath(id int) string {
 	return fmt.Sprintf("%s/%d", dnsAppsBasePath, id)
 }
