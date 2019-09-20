@@ -4,6 +4,9 @@
 
 A Go client library for accessing the Citrix ITM API.
 
+| NOTICE: Due to strategic changes at Citrix, this project is no longer maintained. |
+| --- |
+
 ## Running Unit Tests in Docker
 
 go-itm can be updated and tested in isolation on your local machine. A Dockerfile and Make targets are provided to aid in this process.
