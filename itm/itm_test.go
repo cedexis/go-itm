@@ -1,39 +1,43 @@
 package itm
 
 import (
-	"bytes"
-	"encoding/json"
-	"io/ioutil"
-	"log"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 )
 
-var (
+type testServerInfo struct {
 	mux    *http.ServeMux
 	server *httptest.Server
 	client *Client
-)
-
-func setup() func() {
-	mux = http.NewServeMux()
-	server = httptest.NewServer(mux)
-	serverURL, _ := url.Parse(server.URL)
-	client, _ = NewClient(BaseURL(serverURL))
-	return func() {
-		server.Close()
-	}
 }
 
-func testClientDefaults(t *testing.T, c *Client) {
-	if c.BaseURL.String() != defaultBaseURL {
-		t.Error(unexpectedValueString("Base URL", c.BaseURL, defaultBaseURL))
+func (info *testServerInfo) closeServer() {
+	info.server.Close()
+}
+
+type testServerInfoOpts struct {
+	clientOpts []ClientOpt
+}
+
+func newTestServerInfo(opts *testServerInfoOpts) testServerInfo {
+	result := testServerInfo{
+		mux: http.NewServeMux(),
 	}
-	if c.UserAgentString != defaultUserAgentString {
-		t.Error(unexpectedValueString("User Agent String", c.UserAgentString, defaultUserAgentString))
+	result.server = httptest.NewServer(result.mux)
+	serverURL, _ := url.Parse(result.server.URL)
+	clientArgs := []ClientOpt{
+		BaseURL(serverURL),
 	}
+	if opts != nil && opts.clientOpts != nil {
+		for _, opt := range opts.clientOpts {
+			clientArgs = append(clientArgs, opt)
+		}
+	}
+	result.client, _ = NewClient(clientArgs...)
+	return result
 }
 
 func TestNewClient(t *testing.T) {
@@ -73,21 +77,25 @@ func TestNewClient(t *testing.T) {
 }
 
 type fakeReaderCloser struct {
+	reader    io.Reader
 	readCount int
 	readError error
 }
 
-func (r fakeReaderCloser) Close() error {
+func (r *fakeReaderCloser) Close() error {
 	return nil
 }
 
-func (r fakeReaderCloser) Read(p []byte) (n int, err error) {
+func (r *fakeReaderCloser) Read(p []byte) (n int, err error) {
+	if r.reader != nil {
+		return r.reader.Read(p)
+	}
 	return r.readCount, r.readError
 }
 
 func TestIOErrorOnReadAllDuringGet(t *testing.T) {
 	response := http.Response{
-		Body: fakeReaderCloser{
+		Body: &fakeReaderCloser{
 			readCount: 0,
 			readError: &someError{
 				errorString: "foo read error",
@@ -96,10 +104,12 @@ func TestIOErrorOnReadAllDuringGet(t *testing.T) {
 	}
 	// A fake client whose response raises an error to be caught and handled
 	fakeClient := newFakeHTTPClient(
-		fakeRoundTripper{
-			resp: &response,
-			err:  nil,
-		})
+		newFakeRoundTripper([]fakeRoundTripResponse{
+			fakeRoundTripResponse{
+				resp: &response,
+				err:  nil,
+			},
+		}))
 	testClient, _ := NewClient(HTTPClient(fakeClient))
 	resp, err := testClient.get("foo/bar")
 	expectedError := "foo read error"
@@ -111,51 +121,41 @@ func TestIOErrorOnReadAllDuringGet(t *testing.T) {
 	}
 }
 
-type echoRequestHeadersTransport struct{}
-
-func (r echoRequestHeadersTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	jsonString, _ := json.Marshal(req.Header)
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Body:       ioutil.NopCloser(bytes.NewReader(jsonString)),
-	}, nil
-}
-
 func TestUserAgentStringOnRequest(t *testing.T) {
-	// Create a new client and make a GET request. Ensure that the expected
-	// User-Agent header is sent.
+	// Create a new client and make a GET request.
+	// Ensure that the expected User-Agent header is sent.
 	testConfigs := []struct {
-		userAgent      string
-		expectedHeader string
+		userAgent               string
+		expectedUserAgentHeader string
 	}{
 		{"foo", "foo"},
 		{"", defaultUserAgentString},
 	}
 	for _, config := range testConfigs {
-		fakeHTTPClient := &http.Client{
-			Transport: echoRequestHeadersTransport{},
+		serverInfo := newTestServerInfo(
+			&testServerInfoOpts{
+				clientOpts: []ClientOpt{
+					UserAgentString(config.userAgent),
+				},
+			},
+		)
+		defer serverInfo.closeServer()
+
+		handler := func(w http.ResponseWriter, req *http.Request) {
+			if req.Header["User-Agent"] == nil {
+				t.Error("User-Agent header not sent")
+			} else {
+				if 1 != len(req.Header["User-Agent"]) {
+					t.Errorf("Expected only one User-Agent header; got %d\n", len(req.Header["User-Agent"]))
+				}
+				if req.Header["User-Agent"][0] != config.expectedUserAgentHeader {
+					t.Errorf(unexpectedValueString("User-Agent header",
+						config.expectedUserAgentHeader,
+						req.Header["User-Agent"][0]))
+				}
+			}
 		}
-		var client *Client
-		if config.userAgent == "" {
-			client, _ = NewClient(HTTPClient(fakeHTTPClient))
-		} else {
-			client, _ = NewClient(HTTPClient(fakeHTTPClient), UserAgentString(config.userAgent))
-		}
-		resp, err := client.get("foo/bar")
-		if err != nil {
-			t.Fatal(err)
-		}
-		var anyJSON map[string]interface{}
-		json.Unmarshal(resp.Body, &anyJSON)
-		if anyJSON["User-Agent"] == nil {
-			t.Error("User-Agent header not sent")
-		}
-		userAgentHeaders := anyJSON["User-Agent"].([]interface{})
-		if len(userAgentHeaders) != 1 {
-			log.Printf("Expected only one User-Agent header; got %d", len(userAgentHeaders))
-		}
-		if userAgentHeaders[0] != config.expectedHeader {
-			t.Errorf("Unexpected User-Agent string header; wanted %s; got %s", config.expectedHeader, userAgentHeaders[0])
-		}
+		serverInfo.mux.HandleFunc("/foo/bar", handler)
+		serverInfo.client.get("foo/bar")
 	}
 }
